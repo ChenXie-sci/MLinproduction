@@ -1,0 +1,6 @@
+   test_rmse   fit_time  test_time Algorithm
+0   0.988491   6.589353   0.612554       SVD
+1   0.988068  19.916243   1.767027     SVDpp
+2   1.229725   2.924104   0.599116  SlopeOne
+3   1.173671   8.612353   0.564454       NMF
+Best Algorithm is  NMF

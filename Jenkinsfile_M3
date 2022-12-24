@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+    triggers {
+        cron('H 16 * * 3')
+        cron('H 16 * * 6')
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: '14cea341-f8a8-47ef-bdef-4f1a820ee9d1', url: 'https://github.com/cmu-seai/group-project-f22-mavericks.git']]])
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Build and Setup Environment'
+                git credentialsId: '14cea341-f8a8-47ef-bdef-4f1a820ee9d1', url: 'https://github.com/cmu-seai/group-project-f22-mavericks.git'
+                sh '''#!/bin/bash
+                python -m venv env 
+                source env/bin/activate
+                pip install -r requirements.txt'''
+                
+            }
+        }
+         stage('Model Training') {
+            steps {
+                echo 'Training Model with new data from Kafka'
+                sh '''#!/bin/bash
+                python -m venv env 
+                source env/bin/activate
+                pip install -r requirements.txt
+                cd recommendation-service/recommendation_model
+                python kafka_consumer.py
+                python test_data.py
+                python model_trials.py
+                '''
+            }
+         }
+         
+         stage('Replace Old Model') {
+            steps {
+                echo 'Replacing old models A and B'
+                sh '''#!/bin/bash
+                python -m venv env 
+                source env/bin/activate
+                pip install -r requirements.txt
+                cd recommendation-service
+                docker compose up --build -d
+                '''
+            }
+         }
+         
+         stage('Upload To Neptune.ai') {
+            steps {
+                echo 'Uploading data to neptune for provenance'
+                sh '''#!/bin/bash
+                python -m venv env 
+                source env/bin/activate
+                pip install -r requirements.txt
+                cd recommendation-service/provenance
+                python train.py
+                '''
+            }
+         }
+            
+            
+    }
+}
